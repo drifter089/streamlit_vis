@@ -143,3 +143,5 @@ else:
     
 
 
+fig=px.bar(n1.carriers[n1.carriers["co2_emissions"]!=0]["co2_emissions"])
+st.plotly_chart(fig, use_container_width=True)
