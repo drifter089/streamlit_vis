@@ -56,7 +56,7 @@ def get_map(n):
 
 def get_first_graph(n):
     option = st.selectbox(
-    'How would you like to be contacted?',
+    'Select your metric',
     ('Capital Expenditure', 'Installed Capacity', 'Operational Expenditure','Revenue','Optimal Capacity'))
 
     st.write(option)
