@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import pypsa
 
 n = pypsa.Network("./results/NG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
-n1 = pypsa.Network("./results/NO_OIL/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
+n1 = pypsa.Network("./results/BIG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
 
 
 # with st.sidebar:
@@ -131,7 +131,9 @@ if(genre == 'no_oil'):
                      "value": ylabel,
                      })
     st.plotly_chart(fig, use_container_width=True)
-
+    # 
+    fig=px.bar(n.carriers[n.carriers["co2_emissions"]!=0]["co2_emissions"])
+    st.plotly_chart(fig, use_container_width=True)
 else:
     fig=px.bar(n1.statistics()[[x != 0 and not math.isnan(x) for x in n1.statistics()[option]]][option].loc
     ['Generator'].drop('load', errors='ignore'),color='value',
@@ -140,8 +142,8 @@ else:
                          "value": ylabel,
                      })
     st.plotly_chart(fig, use_container_width=True)       
-    
+    # 
+    fig=px.bar(n1.carriers[n1.carriers["co2_emissions"]!=0]["co2_emissions"],color='value')
+    st.plotly_chart(fig , use_container_width=True)
 
 
-fig=px.bar(n1.carriers[n1.carriers["co2_emissions"]!=0]["co2_emissions"])
-st.plotly_chart(fig, use_container_width=True)
