@@ -7,14 +7,16 @@ import plotly.graph_objects as go
 from matplotlib.colors import to_rgba
 import plotly.express as px
 import math
+import json
+
 
 
 import matplotlib.pyplot as plt
 
 import pypsa
 
-n = pypsa.Network("./results/NG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
-n1 = pypsa.Network("./results/BIG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
+n1 = pypsa.Network("./results/NG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
+n = pypsa.Network("./results/BIG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc")
 
 
 # with st.sidebar:
@@ -104,7 +106,7 @@ with st.sidebar:
 
     genre = st.radio(
     "Select a graph:",
-    ('no_oil', 'with_oil'))
+    ('without_oil', 'with_oil'))
 
 
 
@@ -114,7 +116,7 @@ option = st.selectbox(
     'How would you like to be contacted?',
     ('Capital Expenditure', 'Installed Capacity', 'Operational Expenditure','Revenue','Optimal Capacity'))
 
-st.write('You selected:', option)
+st.write(option)
 
 
 ylabel=""
@@ -123,7 +125,7 @@ if(option == 'Capital Expenditure'or option == 'Operational Expenditure' or opti
 else:
     ylabel = "MW"
 
-if(genre == 'no_oil'):
+if(genre == 'without_oil'):
     fig=px.bar(n.statistics()[[x != 0 and not math.isnan(x) for x in n.statistics()[option]]][option].loc
     ['Generator'].drop('load', errors='ignore'),color='value',
            labels={
@@ -131,9 +133,25 @@ if(genre == 'no_oil'):
                      "value": ylabel,
                      })
     st.plotly_chart(fig, use_container_width=True)
-    # 
-    fig=px.bar(n.carriers[n.carriers["co2_emissions"]!=0]["co2_emissions"])
-    st.plotly_chart(fig, use_container_width=True)
+
+    option = st.selectbox(
+    'How would you like to be contacted?',
+    ('CO2 emissions', 'optimal generator capacity', 'transmission line expansion'))
+
+    st.write(option)
+
+    if(option == 'CO2 emissions'):
+        fig=px.bar(n.carriers[n.carriers["co2_emissions"]!=0]["co2_emissions"],color='value')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    elif(option == 'optimal generator capacity'):
+        fig=px.bar(n.generators.groupby(by="carrier")["p_nom"].sum().drop("load", errors='ignore'),color='value')
+        st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        fig=px.bar(n.lines.s_nom - n.lines.s_nom_opt,color='value') 
+        st.plotly_chart(fig, use_container_width=True)
+
 else:
     fig=px.bar(n1.statistics()[[x != 0 and not math.isnan(x) for x in n1.statistics()[option]]][option].loc
     ['Generator'].drop('load', errors='ignore'),color='value',
@@ -141,9 +159,27 @@ else:
                         "carrier": "type of generator",
                          "value": ylabel,
                      })
-    st.plotly_chart(fig, use_container_width=True)       
-    # 
-    fig=px.bar(n1.carriers[n1.carriers["co2_emissions"]!=0]["co2_emissions"],color='value')
-    st.plotly_chart(fig , use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)    
+
+    option = st.selectbox(
+    'How would you like to be contacted?',
+    ('CO2 emissions', 'optimal generator capacity', 'transmission line expansion'))
+
+    st.write(option)
+
+    if(option == 'CO2 emissions'):
+        fig=px.bar(n1.carriers[n1.carriers["co2_emissions"]!=0]["co2_emissions"],color='value')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    elif(option == 'optimal generator capacity'):
+        fig=px.bar(n1.generators.groupby(by="carrier")["p_nom"].sum().drop("load", errors='ignore'),color='value')
+        st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        fig=px.bar(n1.lines.s_nom - n1.lines.s_nom_opt,color='value') 
+        st.plotly_chart(fig, use_container_width=True)
 
 
+nigir=json.load(open("./africa_shape.geojson",'r'))
+fig=(px.choropleth(None,geojson=nigir))
+st.plotly_chart(fig, use_container_width=True)
