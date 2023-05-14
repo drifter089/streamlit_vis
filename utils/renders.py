@@ -24,7 +24,7 @@ def get_map(n):
     
     options = st.multiselect(
     'select features',
-    ['lines', 'generators'])
+    ['lines', 'generators'], default=["generators"])
 
     df=tools.get_sctter_points(n)
 
