@@ -13,15 +13,17 @@ import plotly.offline as pltly
 import sys
 sys.path.insert(0, "..")
 from utils import plot
+from utils import tools
 
 import matplotlib.pyplot as plt
+import json
 
 import pypsa
 
 ng_model_location = "./results/NG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc"
 big_model_location = "./results/BIG/networks/elec_s_10_ec_lcopt_Co2L-4H.nc"
 
-n = pypsa.Network(ng_model_location)
+
 
 with st.sidebar:
     st.title("PyPSA-Earth Sample Network Analysis")
@@ -30,54 +32,51 @@ with st.sidebar:
     "Select a graph:",
     ('no_oil', 'with_oil'))
 
-
-
-
-
-option = st.selectbox(
-    'How would you like to be contacted?',
-    ('Capital Expenditure', 'Installed Capacity', 'Operational Expenditure','Revenue','Optimal Capacity'))
-
-st.write('You selected:', option)
-
-
-ylabel=""
-if(option == 'Capital Expenditure'or option == 'Operational Expenditure' or option == 'Revenue'):
-    ylabel = "Euro"
+if(genre == 'no_oil'):
+    n = pypsa.Network(big_model_location)
 else:
-    ylabel = "MW"
+    n = pypsa.Network(ng_model_location)
 
-# if(genre == 'no_oil'):
-#     fig=px.bar(n.statistics()[[x != 1 and not math.isnan(x) for x in n.statistics()[option]]][option].loc
-#     ['Generator'].drop('load', errors='ignore'),color='value',
-#            labels={
-#                      "carrier": "type of generator",
-#                      "value": ylabel,
-#                      })
-#     st.plotly_chart(fig, use_container_width=True)
-#     # 
-#     fig=px.bar(n.carriers[n.carriers["co2_emissions"]!=0]["co2_emissions"])
-#     st.plotly_chart(fig, use_container_width=True)
-# else:
-#     fig=px.bar(n1.statistics()[[x != 0 and not math.isnan(x) for x in n1.statistics()[option]]][option].loc
-#     ['Generator'].drop('load', errors='ignore'),color='value',
-#               labels={
-#                         "carrier": "type of generator",
-#                          "value": ylabel,
-#                      })
-#     st.plotly_chart(fig, use_container_width=True)       
-#     # 
-#     fig=px.bar(n1.carriers[n1.carriers["co2_emissions"]!=0]["co2_emissions"],color='value')
-#     st.plotly_chart(fig , use_container_width=True)
-df = pd.DataFrame()
-df["x"] = n.buses["x"]
-df["y"] = n.buses["y"]
-df["name"] = n.buses.index
-import json
+options = st.multiselect(
+    'select features',
+    ['lines', 'generators'])
+
+
+
+
 nigeria_boundries = json.load(open("nigeria_geojson.geojson"))
-fig = px.scatter_geo(df, lat="y", lon="x", geojson=nigeria_boundries, featureidkey="properties.state", hover_name="name")
-fig.update_geos(fitbounds="geojson", scope="africa", projection_type="conic equidistant")
-st.plotly_chart(fig, use_container_width=True)
 
-# fig = plot.plot(n, geomap=True, color_geomap=True)
+df=tools.get_sctter_points(n)
+
+if(options.__contains__("generators")):
+    fig = px.scatter_mapbox(df, lat="y", lon="x", hover_name="name",size="size" ,color="size",opacity=1)
+
+else:
+    fig = px.scatter_mapbox(df, lat="y", lon="x", hover_name="name",size="size" ,color="size",opacity=0)
+
+# create line traces to figure
+line_df = tools.get_lines(n)
+
+if(options.__contains__("lines")):
+    for i in range(len(line_df)):
+        s_nom = line_df["width"][i]
+        fig.add_trace(
+            go.Scattermapbox(
+                lon=[line_df["source_x"][i], line_df["destination_x"][i]],
+                lat=[line_df["source_y"][i], line_df["destination_y"][i]],
+                mode="lines",
+                line=dict(width=line_df["width"][i]/800),
+                hovertemplate=f"s_nom: {s_nom:.2f},   name: {line_df['index'][i]}",
+                hovertext=line_df["width"][i],
+                name=line_df["index"][i],
+                hoverinfo ="all",
+                showlegend=False,
+            )
+        )
+
+fig.update_layout(mapbox_style="carto-positron", mapbox_zoom=4.5, mapbox_center={"lat": sum(df["y"])/len(df), "lon": sum(df["x"])/len(df)})
+
+st.plotly_chart(fig, use_container_width=False, theme="streamlit")
+
+
 
